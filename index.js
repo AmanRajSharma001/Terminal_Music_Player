@@ -56,7 +56,7 @@ let isPaused = false;
     })
     function showSongs(){
         for (let i = 0; i<songs.length; i++){
-            process.stdout.write("\x1b[2K");
+            process.stdout.write("\r\x1b[2K");
             
             if (i === selected_Song){
                 console.log(`=> ${i + 1}: ${songs[i]}`);
@@ -74,8 +74,49 @@ let isPaused = false;
         }
         Player = await audio(`./songs/${songs[index]}`);
         isPaused = false;
+
+        Player.on("timeupdate",()=>{
+            updateProgress();
+        })
         Player.play()
     }
+
+    function pause(){
+        if (Player && !isPaused){
+            Player.pause()
+            isPaused = true;
+        }
+    }
+
+    function resume(){
+        if (Player && isPaused){
+            Player.resume()
+            isPaused = false;
+        }
+    }
+
+    function quit(){
+        if (Player){
+            Player.stop();
+            Player.dispose();
+            Player = null;
+        }
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        process.exit(0);
+    }
+
+    function updateProgress(){
+        if (!Player || !Player.duration){
+            return;
+        }
+        const percentage = (Player.currentTime/Player.duration) * 100;
+        const barLength = 20;
+
+        const filledLength = Math.floor((percentage/100)*barLength);
+        const bar =  "█".repeat(filledLength) + "░".repeat(barLength - filledLength);
+        process.stdout.write(`\r\x1b[2K[${bar}]] ${percentage.toFixed(0)}%`);
+    }    
 })();
 
 
